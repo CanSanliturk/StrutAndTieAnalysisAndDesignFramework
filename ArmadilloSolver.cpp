@@ -76,6 +76,7 @@ int main()
     ElementListFactory elmLF(nodeVec, gapVector, meshSize, lX, lY, e, v, thickness);
     vector<Element> elmVec = elmLF.ElementList;
     int numElm = elmVec.size();
+    cout<<"Number of elements = "<<numElm<<endl;
     Element elmArr[numElm];
     for (int i = 0; i < numElm; ++i)
     {
@@ -85,7 +86,7 @@ int main()
     }
     cout<<"Meshes are created"<<endl;
 
-    // Normally, i use StiffnessMatrixAssembler for the calculations below but i get segmentation error in runtime
+    // Normally, i use StiffnessMatrixAssembler for the calcudouble elementMatrix[8][8]lations below but i get segmentation error in runtime
     // (not building). This is a temporary solution. I will work with pointers and arrays instead of vectors because
     // the error could not be solved. Really wonder why...
     int nDof = 0;
@@ -299,26 +300,47 @@ int main()
     arma::vec resDataHelper(nDofUnrestrained);
     resDataHelper = arma::solve(kArma, fArma);
     arma::vec resData(nDof);
+    std::vector<double> dispVector;
 
     for (int i = 0; i < nDof; ++i)
     {
     	if (i < nDofUnrestrained)
     	{
     		resData(i) = resDataHelper(i);
+    		dispVector.push_back(resDataHelper(i));
     	}
     	else
     	{
     		resData(i) = 0;
+    		dispVector.push_back(0);
     	}
     }
 
     cout<<"End of solver"<<endl;
     cout<<"Displacements are calculated"<<endl;
 
+    PrincipleStressCalculator pSC(elmVec, dispVector, e, v, meshSize);
+    cout<<"Chk1"<<endl;
+    std::vector<std::vector<double>> principleStressVector(elmVec.size());
+    cout<<"Chk2"<<endl;
+    principleStressVector = pSC.PrincipleStressList;
+    cout<<"Chk3"<<endl;
+    int stressListSize = principleStressVector.size();
+    cout<<"stressListSize="<<stressListSize<<endl;
 
+    for (int i = 0; i < stressListSize; ++i)
+    {
+    	std::vector<double> elmStress = principleStressVector.at(i);
+    	double sigmaXX = elmStress.at(0) * 0.000001;
+    	double sigmaYY = elmStress.at(1) * 0.000001;
+    	double sigmaXY = elmStress.at(2) * 0.000001;
 
-
-
+    	cout<<"--------------------------------------------------------------"<<endl;
+    	cout<<"Element No: "<<i + 1<<endl;
+    	cout<<"Stress in XX-Direction = "<<sigmaXX<<" MPa"<<endl;
+    	cout<<"Stress in YY-Direction = "<<sigmaYY<<" MPa"<<endl;
+    	cout<<"Stress in XY-Direction = "<<sigmaXY<<" MPa"<<endl;
+    }
 
 
     auto timenow2 =
