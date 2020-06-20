@@ -10,12 +10,13 @@ class Element
 {
 public:
     Element();
-    Element(int elmIndex, Node firstNode, Node secondNode, Node thirdNode, Node fourthNode, double elementMatrix[8][8]);
+    Element(int elmIndex, Node firstNode, Node secondNode, Node thirdNode, Node fourthNode, double elementMatrix[8][8], double stiffnessModifier = 1);
     int ElementIndex;
     Node FirstNode;
     Node SecondNode;
     Node ThirdNode;
     Node FourthNode;
+    double StiffnessModifier;
     double ElementMatrix[8][8];
 };
 

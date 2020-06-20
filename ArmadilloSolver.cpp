@@ -7,6 +7,7 @@
 #include "Analysis/Headers/EssentialBC.h"
 #include "Analysis/Headers/NodeListFactory.h"
 #include "Analysis/Headers/ElementListFactory.h"
+#include "Analysis/Headers/PrincipleStressCalculator.h"
 #include <armadillo>
 
 using namespace std;
@@ -312,12 +313,16 @@ int main()
     }
 
     cout<<"End of solver"<<endl;
-    cout<<"Analysis is finished"<<endl;
+    cout<<"Displacements are calculated"<<endl;
 
-    cout<<"End of analysis"<<endl;
+
+
+
+
+
+
     auto timenow2 =
             chrono::system_clock::to_time_t(chrono::system_clock::now());
-
     cout << ctime(&timenow2) << endl;
     cout<< "Elapsed Time = " << timenow2 - timenow << " seconds"<< endl;
 
