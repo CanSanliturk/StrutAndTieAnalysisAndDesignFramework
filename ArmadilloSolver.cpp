@@ -336,7 +336,7 @@ int main()
     	double sigmaXY = elmStress.at(2) * 0.000001;
 
     	cout<<"--------------------------------------------------------------"<<endl;
-    	cout<<"Element No: "<<i + 1<<endl;
+    	cout<<"Element No: "<< (i + 1) <<endl;
     	cout<<"Stress in XX-Direction = "<<sigmaXX<<" MPa"<<endl;
     	cout<<"Stress in YY-Direction = "<<sigmaYY<<" MPa"<<endl;
     	cout<<"Stress in XY-Direction = "<<sigmaXY<<" MPa"<<endl;
