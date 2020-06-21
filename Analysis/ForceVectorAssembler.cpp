@@ -1,3 +1,4 @@
+#include <iostream>
 #include "Headers/ForceVectorAssembler.h"
 #include <vector>
 #include "Headers/Node.h"
@@ -13,7 +14,7 @@ std::vector<double> ForceVectorAssembler::GetForceVector(std::vector<Node> nodeV
 {
     std::vector<double> forceVector(nDof);
     std::fill(forceVector.begin(), forceVector.end(), 0);
-    double tol = 0.000001; // Set tolerance value to check equality
+    double tol = 0.001; // Set tolerance value to check equality
 
     for (auto nbc : NaturalBCVector)
     {
@@ -31,6 +32,7 @@ std::vector<double> ForceVectorAssembler::GetForceVector(std::vector<Node> nodeV
 
         if (isPtLoad)
         {
+            std::cout<<"This is a point load"<<std::endl;
             for (int j = 0; j < nodeVec.size(); ++j)
             {
                 Node loadedNode = nodeVec.at(j);
@@ -41,6 +43,7 @@ std::vector<double> ForceVectorAssembler::GetForceVector(std::vector<Node> nodeV
 
                 if (IsEqual(xSt, nodalX, tol) && IsEqual(ySt, nodalY, tol))
                 {
+                    std::cout<<"load is at this point"<<std::endl;
                     forceVector.at(dofIdxXDir) += xVal;
                     forceVector.at(dofIdxYDir) += yVal;
                     break;

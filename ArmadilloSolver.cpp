@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+#include <string>
 #include <vector>
 #include <chrono>
 #include "Analysis/Headers/Node.h"
@@ -28,18 +30,18 @@ int main()
     /// INPUT CARD ///
     // Length : m, Force : N
     // Surface outer dimensions
-    double lX = 6; // in meters
-    double lY = 3; // in meters
-    double thickness = 0.25; // in meters
+    double lX = 1; // in meters
+    double lY = 6; // in meters
+    double thickness = 1; // in meters
     vector<double> dimVector{ lX, lY };
 
     // Material properties
-    double e = 33000000000; // Elasticity modululus in Pa
+    double e = 10000000000; // Elasticity modululus in Pa
     double v = 0.3; // Poisson's ratio
-    double rho = 2500; // Density of material in kg/m3 (if mass is not gonna be encountered, simply send it as "0")
+    double rho = 0; // Density of material in kg/m3 (if mass is not gonna be encountered, simply send it as "0")
 
     // Info of mesh
-    double meshSize = 0.1; // in meters
+    double meshSize = 1; // in meters
     string meshType = "Quad";  // It is either "Quad" or "Triangular". Triangular mesh is not prepared yet (2020.05.21)
 
     // Info of gap(s)
@@ -52,16 +54,16 @@ int main()
     // Essential bc's on primary variable (Displacements in case of elasticity problem)
     //EssentialBC nullEBC(-1, -1, -1, -1, -1, -1);
     EssentialBC ebcFirst(0, 0, 0, 0, 1, 1);
-    EssentialBC ebcSecond(0, 0, 3, 3, 1, 1);
+    EssentialBC ebcSecond(1, 1, 0, 0, 1, 1);
     vector<EssentialBC> ebcVector{ ebcFirst, ebcSecond };
 
     //// Natural bc's on secondary variable (Forces in case of elasticity problem)
     /*NaturalBC firstNBC(0, 0, 0, 0, 0, 221667);
     NaturalBC secondNBC(6, 6, 0, 0, 0, 128333);*/
-    NaturalBC firstNBC(6, 6, 3, 3, 0, -100000);
-    NaturalBC secondNBC(6, 6, 0, 0, 0, -100000);
-    vector<NaturalBC> nbcVector{ firstNBC };
-    double tol = 0.000001; // Set tolerance value to check equality
+    NaturalBC firstNBC(0, 0, 5, 5, 0, 100000);
+    NaturalBC secondNBC(1, 1, 5, 5, 0, 100000);
+    vector<NaturalBC> nbcVector{ firstNBC, secondNBC };
+    double tol = 0.001; // Set tolerance value to check equality
 
     /// SOLVER PART /// This part is going to be moved to a seperate class named as solver
 
@@ -106,20 +108,33 @@ int main()
         bool isXDir = (!IsEqual(essentialBc.XStart, essentialBc.XEnd, tol)) && IsEqual(essentialBc.YStart, essentialBc.YEnd, tol);
         bool isYDir = IsEqual(essentialBc.XStart, essentialBc.XEnd, tol) && (!IsEqual(essentialBc.YStart, essentialBc.YEnd, tol));
 
+        int nRest = 1;
+        if (essentialBc.ValueX > (-1 * tol) && essentialBc.ValueY > (-1 * tol))
+        {
+            nRest = 2;
+        }
+
+        int addVal = 0;
+
         if (isPoint)
         {
-            nDofRestrained++;
+            addVal++;
         }
         else if(isXDir)
         {
             int restrainedNodeNumber = (essentialBc.XEnd - essentialBc.XStart) / meshSize;
-            nDofRestrained += restrainedNodeNumber;
+            addVal += restrainedNodeNumber;
         }
         else if (isYDir)
         {
             int restrainedNodeNumber = (essentialBc.YEnd - essentialBc.XEnd) / meshSize;
-            nDofRestrained += restrainedNodeNumber;
+            addVal += restrainedNodeNumber;
         }
+
+        addVal *= nRest;
+
+        nDofRestrained += addVal;
+
     }
 
     nDofUnrestrained = nDof - nDofRestrained;
@@ -132,7 +147,47 @@ int main()
 
     DisplacementCalculator dispCal(kGlobal, fGlobal, nDof, nDofRestrained);
     std::vector<double> dispVector = dispCal.DisplacementVector;
+    std::vector<double> supportReactions = dispCal.SupportReactions;
     
+    ofstream StiffnessMatrixFile;
+    ofstream ForceVectorFile;
+    ofstream DisplacementFile;
+    ofstream SupportReactionsFile;
+
+    StiffnessMatrixFile.open("Outputs/AnalysisOutputs/StiffnessMatrix");
+    ForceVectorFile.open("Outputs/AnalysisOutputs/ForceVectorFile");
+    DisplacementFile.open("Outputs/AnalysisOutputs/DisplacementFile");
+    SupportReactionsFile.open("Outputs/AnalysisOutputs/SupportReactions");
+
+    for (int i = 0; i < nDof; ++i)
+    {
+        
+        for (int j = 0; j < nDof; ++j)
+        {            
+            StiffnessMatrixFile << kGlobal.at(i).at(j);
+            StiffnessMatrixFile << " ";
+        }
+        
+        StiffnessMatrixFile << "\n";
+        ForceVectorFile << fGlobal.at(i);
+        ForceVectorFile << "\n";
+        DisplacementFile << dispVector.at(i);
+        DisplacementFile << "\n";
+
+    }
+
+    StiffnessMatrixFile.close();
+    ForceVectorFile.close();
+    DisplacementFile.close();
+    
+    for (int i = 0; i < nDofRestrained; ++i)
+    {
+        SupportReactionsFile << supportReactions.at(i);
+        SupportReactionsFile << "\n";
+    }
+    
+    SupportReactionsFile.close();
+
     cout<<"Displacements are calculated"<<endl;
 
     PrincipleStressCalculator pSC(elmVec, dispVector, e, v, meshSize);
@@ -140,7 +195,7 @@ int main()
     principleStressVector = pSC.PrincipleStressList;
     int stressListSize = principleStressVector.size();
 
-    
+    /*
     for (int i = 0; i < stressListSize; ++i)
     {
     	std::vector<double> elmStress = principleStressVector.at(i);
@@ -154,14 +209,17 @@ int main()
     	cout<<"Stress in YY-Direction = "<<sigmaYY<<" MPa"<<endl;
     	cout<<"Stress in XY-Direction = "<<sigmaXY<<" MPa"<<endl;
     }
-	
+	*/
 
     auto timenow2 =
             chrono::system_clock::to_time_t(chrono::system_clock::now());
     cout << ctime(&timenow2) << endl;
     cout<< "Elapsed Time = " << timenow2 - timenow << " seconds"<< endl;
 
-    
-    
+    for (int i = 0; i < nDofRestrained; ++i)
+    {
+        cout << supportReactions.at(i) << "\n";
+    }
+
     return 0;
 }
