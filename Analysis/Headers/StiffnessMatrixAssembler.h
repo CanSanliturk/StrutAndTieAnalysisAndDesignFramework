@@ -1,7 +1,6 @@
 #ifndef ELASTICITY_STIFFNESSMATRIXASSEMBLER_H
 #define ELASTICITY_STIFFNESSMATRIXASSEMBLER_H
 #include <vector>
-#include"Gap.h"
 #include"Node.h"
 #include "Element.h"
 

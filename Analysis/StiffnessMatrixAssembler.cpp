@@ -1,5 +1,6 @@
 #include "Headers/StiffnessMatrixAssembler.h"
 #include <vector>
+#include <armadillo>
 #include "Headers/Node.h"
 #include "Headers/Element.h"
 
@@ -11,7 +12,7 @@ StiffnessMatrixAssembler::StiffnessMatrixAssembler(std::vector<Element> ElementV
 std::vector<std::vector<double>> StiffnessMatrixAssembler::GetGlobalStiffnessMatrix(std::vector<Element> ElementVector, int nDof)
 {
     std::vector<std::vector<double>> kGlobal;
-
+    arma::mat asd(3, 3);
     std::vector<double> innerK(nDof);
     std::fill(innerK.begin(), innerK.end(), 0);
 

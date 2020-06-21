@@ -9,6 +9,7 @@
 #include "Analysis/Headers/ElementListFactory.h"
 #include "Analysis/Headers/StiffnessMatrixAssembler.h"
 #include "Analysis/Headers/ForceVectorAssembler.h"
+#include "Analysis/Headers/DisplacementCalculator.h"
 #include "Analysis/Headers/PrincipleStressCalculator.h"
 #include <armadillo>
 
@@ -124,166 +125,14 @@ int main()
     nDofUnrestrained = nDof - nDofRestrained;
     StiffnessMatrixAssembler sMA(elmVec, nDof);
     vector<vector<double>> kGlobal = sMA.GetGlobalStiffnessMatrix(elmVec, nDof);
-
-
-    // Same story of stiffness matrix is valid for force vector, too...
-    // For now, distribute distributed loads equally to adjacent nodes. It will not cause the program to work poorly unless
-    // mesh size is very large. If mesh size is very large, well it should not be any way :D.
-
-    vector<double> forceVector(nDof);
-    fill(forceVector.begin(), forceVector.end(), 0);
-
-    for (auto nbc : nbcVector)
-    {
-        double xSt = nbc.XStart;
-        double xEnd = nbc.XEnd;
-        double ySt = nbc.YStart;
-        double yEnd = nbc.YEnd;
-        double xVal = nbc.ValueX;
-        double yVal = nbc.ValueY;
-
-        // Check the type of the load(whether it is point load, distributed load in x-dir or distributed load in y-dir)
-        bool isPtLoad = IsEqual(xSt, xEnd, tol) && IsEqual(ySt, yEnd, tol);
-        bool isDistXDir = IsEqual(ySt, yEnd, tol) && (!IsEqual(xSt, xEnd, tol));
-        bool isDistYDir = IsEqual(xSt, xEnd, tol) && (!IsEqual(ySt, yEnd, tol));
-
-        if (isPtLoad)
-        {
-            for (int j = 0; j < nodeVec.size(); ++j)
-            {
-                Node loadedNode = nodeVec.at(j);
-                double nodalX = loadedNode.XCoord;
-                double nodalY = loadedNode.YCoord;
-                double dofIdxXDir = loadedNode.DofIndexX;
-                double dofIdxYDir = loadedNode.DofIndexY;
-
-                if (IsEqual(xSt, nodalX, tol) && IsEqual(ySt, nodalY, tol))
-                {
-                    forceVector.at(dofIdxXDir) += xVal;
-                    forceVector.at(dofIdxYDir) += yVal;
-                    break;
-                }
-            }
-        }
-
-        else if (isDistXDir) // if it is distributed in x-dir, then it is loaded in y-dir
-        {
-            for (int j = 0; j < nodeVec.size(); ++j)
-            {
-                Node loadedNode = nodeVec.at(j);
-                double nodalX = loadedNode.XCoord;
-                double nodalY = loadedNode.YCoord;
-                double dofIdxYDir = loadedNode.DofIndexY;
-
-                if (IsEqual(nodalX, xSt, tol))
-                {
-                    double loadToBeAdded = yVal * meshSize / 2;
-                    forceVector.at(dofIdxYDir) += loadToBeAdded;
-                }
-                else if (IsEqual(nodalX, xSt, tol))
-                {
-                    double loadToBeAdded = yVal * meshSize / 2;
-                    forceVector.at(dofIdxYDir) += loadToBeAdded;
-                }
-                else if ((nodalX > xSt) && (nodalX < xEnd))
-                {
-                    double loadToBeAdded = yVal * meshSize;
-                    forceVector.at(dofIdxYDir) += loadToBeAdded;
-                }
-            }
-        }
-        else if (isDistYDir) // if it is distributed in y-dir, then it is loaded in x-dir
-        {
-            for (int j = 0; j < nodeVec.size(); ++j)
-            {
-                Node loadedNode = nodeVec.at(j);
-                double nodalX = loadedNode.XCoord;
-                double nodalY = loadedNode.YCoord;
-                double dofIdxXDir = loadedNode.DofIndexX;
-
-                if (IsEqual(nodalY, ySt, tol))
-                {
-                    double loadToBeAdded = xVal * meshSize / 2;
-                    forceVector.at(dofIdxXDir) += loadToBeAdded;
-                }
-                else if (IsEqual(nodalY, ySt, tol))
-                {
-                    double loadToBeAdded = xVal * meshSize / 2;
-                    forceVector.at(dofIdxXDir) += loadToBeAdded;
-                }
-                else if ((nodalX > xSt) && (nodalX < xEnd))
-                {
-                    double loadToBeAdded = yVal * meshSize;
-                    forceVector.at(dofIdxXDir) += loadToBeAdded;
-                }
-            }
-        }
-    }
-
     ForceVectorAssembler fVA(nodeVec, nbcVector, meshSize, nDof);
-    std::vector<double> newForceVec = fVA.ForceVector;
-
-    for (int i = 0; i < nDof; ++i)
-    {
-        double f1 = forceVector.at(i);
-        double f2 = newForceVec.at(i);
-        bool isDifferent = !IsEqual(f1, f2, tol);
-        if (isDifferent)
-        {
-            cout<<"Difference in Dof-"<<i<<". Difference is "<<(f1 - f2)<<endl;
-        }
-    }
+    std::vector<double> fGlobal = fVA.ForceVector;
 
     cout<<"Assembly of matrices and vectors are completed"<<endl;
 
-    arma::mat kArma(nDofUnrestrained, nDofUnrestrained);
-    arma::mat kGlobalArma(nDof, nDof);
-    arma::vec fGlobalArma(nDof);
-    arma::vec fArma(nDofUnrestrained);
-    kArma.fill(0);
-    kGlobalArma.fill(0);	
-    fArma.fill(0);
-    fGlobalArma.fill(0);
-
-    for (int i = 0; i < nDofUnrestrained; ++i)
-    {
-        for (int j = 0; j < nDofUnrestrained; ++j)
-        {
-            kArma(i, j) = kGlobal.at(i).at(j);
-        }
-        fArma(i) = forceVector.at(i);
-    }
-
-    for (int i = 0; i < nDof; ++i)
-    {
-    	for (int j = 0; j < nDof; ++j)
-    	{
-    		kGlobalArma(i, j) = kGlobal.at(i).at(j);
-    	}
-    }
-
-    cout<<"Beginning of solver"<<endl;
+    DisplacementCalculator dispCal(kGlobal, fGlobal, nDof, nDofRestrained);
+    std::vector<double> dispVector = dispCal.DisplacementVector;
     
-    arma::vec resDataHelper(nDofUnrestrained);
-    resDataHelper = arma::solve(kArma, fArma);
-    arma::vec resData(nDof);
-    std::vector<double> dispVector;
-
-    for (int i = 0; i < nDof; ++i)
-    {
-    	if (i < nDofUnrestrained)
-    	{
-    		resData(i) = resDataHelper(i);
-    		dispVector.push_back(resDataHelper(i));
-    	}
-    	else
-    	{
-    		resData(i) = 0;
-    		dispVector.push_back(0);
-    	}
-    }
-
-    cout<<"End of solver"<<endl;
     cout<<"Displacements are calculated"<<endl;
 
     PrincipleStressCalculator pSC(elmVec, dispVector, e, v, meshSize);
