@@ -7,6 +7,7 @@
 #include "Analysis/Headers/EssentialBC.h"
 #include "Analysis/Headers/NodeListFactory.h"
 #include "Analysis/Headers/ElementListFactory.h"
+#include "Analysis/Headers/StiffnessMatrixAssembler.h"
 #include "Analysis/Headers/PrincipleStressCalculator.h"
 #include <armadillo>
 
@@ -14,7 +15,7 @@ using namespace std;
 
 bool IsEqual(double a, double b)
 {
-    double tol = 0.0000000001;
+    double tol = 0.000001;
     double upperBoundary = b + tol;
     double lowerBoundary = b - tol;
     bool isEqual = (a > lowerBoundary) && (a < upperBoundary);
@@ -98,7 +99,7 @@ int main()
 
         if(idxX > 0)
         {
-            nDof++;
+            nDof++; // Number of total degree of freedoms. (Nodes in gaps have dof index less than zero)
         }
 
         if(idxY > 0)
@@ -133,45 +134,9 @@ int main()
     }
 
     nDofUnrestrained = nDof - nDofRestrained;
+    StiffnessMatrixAssembler sMA(elmVec, nDof);
+    vector<vector<double>> kGlobal = sMA.GetGlobalStiffnessMatrix(elmVec, nDof);
 
-    vector<vector<double>> kGlobal;
-    vector<double> innerK(nDof);
-    std::fill(innerK.begin(), innerK.end(), 0);
-
-    for (int i = 0; i < nDof; ++i)
-    {
-        kGlobal.push_back(innerK);
-    }
-
-    for (int i = 0; i < numElm; ++i)
-    {
-        Element elm = elmArr[i];
-        Node firstNode = elm.FirstNode;
-        Node secondNode = elm.SecondNode;
-        Node thirdNode = elm.ThirdNode;
-        Node fourthNode = elm.FourthNode;
-
-        int steeringVector[8];
-
-        steeringVector[0] = firstNode.DofIndexX;
-        steeringVector[1] = firstNode.DofIndexY;
-        steeringVector[2] = secondNode.DofIndexX;
-        steeringVector[3] = secondNode.DofIndexY;
-        steeringVector[4] = thirdNode.DofIndexX;
-        steeringVector[5] = thirdNode.DofIndexY;
-        steeringVector[6] = fourthNode.DofIndexX;
-        steeringVector[7] = fourthNode.DofIndexY;
-
-        for (int j = 0; j < 8; ++j)
-        {
-            for (int k = 0; k < 8; ++k)
-            {
-                int firstIdx = steeringVector[j] - 1;
-                int secondIdx = steeringVector[k] - 1;
-                kGlobal.at(firstIdx).at(secondIdx) += elm.ElementMatrix[j][k];
-            }
-        }
-    }
 
     // Same story of stiffness matrix is valid for force vector, too...
     // For now, distribute distributed loads equally to adjacent nodes. It will not cause the program to work poorly unless
@@ -320,14 +285,11 @@ int main()
     cout<<"Displacements are calculated"<<endl;
 
     PrincipleStressCalculator pSC(elmVec, dispVector, e, v, meshSize);
-    cout<<"Chk1"<<endl;
     std::vector<std::vector<double>> principleStressVector(elmVec.size());
-    cout<<"Chk2"<<endl;
     principleStressVector = pSC.PrincipleStressList;
-    cout<<"Chk3"<<endl;
     int stressListSize = principleStressVector.size();
-    cout<<"stressListSize="<<stressListSize<<endl;
 
+    
     for (int i = 0; i < stressListSize; ++i)
     {
     	std::vector<double> elmStress = principleStressVector.at(i);
@@ -341,15 +303,15 @@ int main()
     	cout<<"Stress in YY-Direction = "<<sigmaYY<<" MPa"<<endl;
     	cout<<"Stress in XY-Direction = "<<sigmaXY<<" MPa"<<endl;
     }
-
+	
 
     auto timenow2 =
             chrono::system_clock::to_time_t(chrono::system_clock::now());
     cout << ctime(&timenow2) << endl;
     cout<< "Elapsed Time = " << timenow2 - timenow << " seconds"<< endl;
 
-    cout<<kGlobal.size()<<endl;
-
+    
+    
     return 0;
 }
 

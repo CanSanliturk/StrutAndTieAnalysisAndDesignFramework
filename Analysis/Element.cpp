@@ -1,8 +1,6 @@
 #include "Headers/Element.h"
 #include "Headers/Node.h"
 
-
-
 Element::Element(int elmIndex, Node firstNode, Node secondNode, Node thirdNode, Node fourthNode, double elementMatrix[8][8], double stiffnessModifier)
 {
     this->ElementIndex = elmIndex;
