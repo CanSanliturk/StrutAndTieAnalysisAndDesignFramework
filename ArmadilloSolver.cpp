@@ -8,14 +8,14 @@
 #include "Analysis/Headers/NodeListFactory.h"
 #include "Analysis/Headers/ElementListFactory.h"
 #include "Analysis/Headers/StiffnessMatrixAssembler.h"
+#include "Analysis/Headers/ForceVectorAssembler.h"
 #include "Analysis/Headers/PrincipleStressCalculator.h"
 #include <armadillo>
 
 using namespace std;
 
-bool IsEqual(double a, double b)
+bool IsEqual(double a, double b, double tol)
 {
-    double tol = 0.000001;
     double upperBoundary = b + tol;
     double lowerBoundary = b - tol;
     bool isEqual = (a > lowerBoundary) && (a < upperBoundary);
@@ -24,7 +24,6 @@ bool IsEqual(double a, double b)
 
 int main()
 {
-
     /// INPUT CARD ///
     // Length : m, Force : N
     // Surface outer dimensions
@@ -61,6 +60,7 @@ int main()
     NaturalBC firstNBC(6, 6, 3, 3, 0, -100000);
     NaturalBC secondNBC(6, 6, 0, 0, 0, -100000);
     vector<NaturalBC> nbcVector{ firstNBC };
+    double tol = 0.000001; // Set tolerance value to check equality
 
     /// SOLVER PART /// This part is going to be moved to a seperate class named as solver
 
@@ -76,20 +76,8 @@ int main()
 
     ElementListFactory elmLF(nodeVec, gapVector, meshSize, lX, lY, e, v, thickness);
     vector<Element> elmVec = elmLF.ElementList;
-    int numElm = elmVec.size();
-    cout<<"Number of elements = "<<numElm<<endl;
-    Element elmArr[numElm];
-    for (int i = 0; i < numElm; ++i)
-    {
-        Element helperElm = elmVec.at(i);
-        Element tempElm(helperElm.ElementIndex, helperElm.FirstNode, helperElm.SecondNode, helperElm.ThirdNode, helperElm.FourthNode, helperElm.ElementMatrix);
-        elmArr[i] = tempElm;
-    }
     cout<<"Meshes are created"<<endl;
 
-    // Normally, i use StiffnessMatrixAssembler for the calcudouble elementMatrix[8][8]lations below but i get segmentation error in runtime
-    // (not building). This is a temporary solution. I will work with pointers and arrays instead of vectors because
-    // the error could not be solved. Really wonder why...
     int nDof = 0;
     for (int i = 0; i < nodeVec.size(); ++i)
     {
@@ -113,9 +101,9 @@ int main()
     for (int i = 0; i < ebcVector.size(); ++i)
     {
         EssentialBC essentialBc = ebcVector.at(i);
-        bool isPoint = IsEqual(essentialBc.XStart, essentialBc.XEnd) && IsEqual(essentialBc.YStart, essentialBc.YEnd);
-        bool isXDir = (!IsEqual(essentialBc.XStart, essentialBc.XEnd)) && IsEqual(essentialBc.YStart, essentialBc.YEnd);
-        bool isYDir = IsEqual(essentialBc.XStart, essentialBc.XEnd) && (!IsEqual(essentialBc.YStart, essentialBc.YEnd));
+        bool isPoint = IsEqual(essentialBc.XStart, essentialBc.XEnd, tol) && IsEqual(essentialBc.YStart, essentialBc.YEnd, tol);
+        bool isXDir = (!IsEqual(essentialBc.XStart, essentialBc.XEnd, tol)) && IsEqual(essentialBc.YStart, essentialBc.YEnd, tol);
+        bool isYDir = IsEqual(essentialBc.XStart, essentialBc.XEnd, tol) && (!IsEqual(essentialBc.YStart, essentialBc.YEnd, tol));
 
         if (isPoint)
         {
@@ -155,9 +143,9 @@ int main()
         double yVal = nbc.ValueY;
 
         // Check the type of the load(whether it is point load, distributed load in x-dir or distributed load in y-dir)
-        bool isPtLoad = IsEqual(xSt, xEnd) && IsEqual(ySt, yEnd);
-        bool isDistXDir = IsEqual(ySt, yEnd) && (!IsEqual(xSt, xEnd));
-        bool isDistYDir = IsEqual(xSt, xEnd) && (!IsEqual(ySt, yEnd));
+        bool isPtLoad = IsEqual(xSt, xEnd, tol) && IsEqual(ySt, yEnd, tol);
+        bool isDistXDir = IsEqual(ySt, yEnd, tol) && (!IsEqual(xSt, xEnd, tol));
+        bool isDistYDir = IsEqual(xSt, xEnd, tol) && (!IsEqual(ySt, yEnd, tol));
 
         if (isPtLoad)
         {
@@ -169,7 +157,7 @@ int main()
                 double dofIdxXDir = loadedNode.DofIndexX;
                 double dofIdxYDir = loadedNode.DofIndexY;
 
-                if (IsEqual(xSt, nodalX) && IsEqual(ySt, nodalY))
+                if (IsEqual(xSt, nodalX, tol) && IsEqual(ySt, nodalY, tol))
                 {
                     forceVector.at(dofIdxXDir) += xVal;
                     forceVector.at(dofIdxYDir) += yVal;
@@ -187,12 +175,12 @@ int main()
                 double nodalY = loadedNode.YCoord;
                 double dofIdxYDir = loadedNode.DofIndexY;
 
-                if (IsEqual(nodalX, xSt))
+                if (IsEqual(nodalX, xSt, tol))
                 {
                     double loadToBeAdded = yVal * meshSize / 2;
                     forceVector.at(dofIdxYDir) += loadToBeAdded;
                 }
-                else if (IsEqual(nodalX, xSt))
+                else if (IsEqual(nodalX, xSt, tol))
                 {
                     double loadToBeAdded = yVal * meshSize / 2;
                     forceVector.at(dofIdxYDir) += loadToBeAdded;
@@ -213,12 +201,12 @@ int main()
                 double nodalY = loadedNode.YCoord;
                 double dofIdxXDir = loadedNode.DofIndexX;
 
-                if (IsEqual(nodalY, ySt))
+                if (IsEqual(nodalY, ySt, tol))
                 {
                     double loadToBeAdded = xVal * meshSize / 2;
                     forceVector.at(dofIdxXDir) += loadToBeAdded;
                 }
-                else if (IsEqual(nodalY, ySt))
+                else if (IsEqual(nodalY, ySt, tol))
                 {
                     double loadToBeAdded = xVal * meshSize / 2;
                     forceVector.at(dofIdxXDir) += loadToBeAdded;
@@ -229,6 +217,20 @@ int main()
                     forceVector.at(dofIdxXDir) += loadToBeAdded;
                 }
             }
+        }
+    }
+
+    ForceVectorAssembler fVA(nodeVec, nbcVector, meshSize, nDof);
+    std::vector<double> newForceVec = fVA.ForceVector;
+
+    for (int i = 0; i < nDof; ++i)
+    {
+        double f1 = forceVector.at(i);
+        double f2 = newForceVec.at(i);
+        bool isDifferent = !IsEqual(f1, f2, tol);
+        if (isDifferent)
+        {
+            cout<<"Difference in Dof-"<<i<<". Difference is "<<(f1 - f2)<<endl;
         }
     }
 
@@ -314,4 +316,3 @@ int main()
     
     return 0;
 }
-

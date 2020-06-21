@@ -4,7 +4,6 @@
 #include"Gap.h"
 #include"Node.h"
 #include "Element.h"
-#include "EssentialBC.h"
 
 class StiffnessMatrixAssembler
 {
