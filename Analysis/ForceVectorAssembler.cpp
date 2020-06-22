@@ -32,7 +32,6 @@ std::vector<double> ForceVectorAssembler::GetForceVector(std::vector<Node> nodeV
 
         if (isPtLoad)
         {
-            std::cout<<"This is a point load"<<std::endl;
             for (int j = 0; j < nodeVec.size(); ++j)
             {
                 Node loadedNode = nodeVec.at(j);
@@ -43,7 +42,6 @@ std::vector<double> ForceVectorAssembler::GetForceVector(std::vector<Node> nodeV
 
                 if (IsEqual(xSt, nodalX, tol) && IsEqual(ySt, nodalY, tol))
                 {
-                    std::cout<<"load is at this point"<<std::endl;
                     forceVector.at(dofIdxXDir) += xVal;
                     forceVector.at(dofIdxYDir) += yVal;
                     break;
