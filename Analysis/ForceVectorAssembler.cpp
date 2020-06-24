@@ -42,8 +42,8 @@ std::vector<double> ForceVectorAssembler::GetForceVector(std::vector<Node> nodeV
 
                 if (IsEqual(xSt, nodalX, tol) && IsEqual(ySt, nodalY, tol))
                 {
-                    forceVector.at(dofIdxXDir) += xVal;
-                    forceVector.at(dofIdxYDir) += yVal;
+                    forceVector.at(dofIdxXDir - 1) += xVal;
+                    forceVector.at(dofIdxYDir - 1) += yVal;
                     break;
                 }
             }

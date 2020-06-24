@@ -14,6 +14,7 @@
 #include "Analysis/Headers/ForceVectorAssembler.h"
 #include "Analysis/Headers/DisplacementCalculator.h"
 #include "Analysis/Headers/PrincipleStressCalculator.h"
+#include "Analysis/Headers/DesignElement.h"
 #include <armadillo>
 
 using namespace std;
@@ -24,6 +25,275 @@ bool IsEqual(double a, double b, double tol)
     double lowerBoundary = b - tol;
     bool isEqual = (a > lowerBoundary) && (a < upperBoundary);
     return isEqual;
+}
+
+vector<vector<double>> MainStressCalculator(vector<Element> elmVec, vector<vector<double>> principleStressVector)
+{
+    std::vector<std::vector<double>> compressiveTensileStresses;
+
+    double sigmaMinAll = 0;
+    double sigmaMaxAll = 0;
+    double sigmaMinAverage = 0;
+    double sigmaMaxAverage = 0;
+
+	for (int i = 0; i < elmVec.size(); ++i)
+    {
+    	Element elm = elmVec.at(i);
+    	std::vector<double> elmStressVec = principleStressVector.at(i);
+    	double sigmaXX = elmStressVec.at(0);
+    	double sigmaYY = elmStressVec.at(1);
+    	double sigmaXY = elmStressVec.at(2);
+
+    	double lambdaOne = 0;
+    	double lambdaTwo = 0;
+
+    	double b = -sigmaXX - sigmaYY;
+    	double c = (sigmaXX * sigmaYY) - (sigmaXY * sigmaXY);
+    	double sqrtTerm = sqrt((b * b) - (4 * c));
+
+    	double lambdaHelperOne = ((-1 * b) + (sqrtTerm)) / 2; 
+    	double lambdaHelperTwo = ((-1 * b) - (sqrtTerm)) / 2;
+
+    	double sigmaMin = 0;
+    	double sigmaMax = 0;
+    	
+    	std::vector<double> elmSigma;
+
+    	if (lambdaHelperOne > lambdaHelperTwo)
+    	{
+    		sigmaMin = lambdaHelperTwo;
+    		sigmaMax = lambdaHelperOne;
+    	}
+    	else
+    	{
+    		sigmaMin = lambdaHelperOne;
+    		sigmaMax = lambdaHelperTwo;
+    	}
+
+    	sigmaMinAverage += sigmaMin;
+    	sigmaMaxAverage += sigmaMax;
+
+	}
+
+	sigmaMinAverage = sigmaMinAverage / elmVec.size();
+	sigmaMaxAverage = sigmaMaxAverage / elmVec.size();
+
+    for (int i = 0; i < elmVec.size(); ++i)
+    {
+    	Element elm = elmVec.at(i);
+    	std::vector<double> elmStressVec = principleStressVector.at(i);
+    	double sigmaXX = elmStressVec.at(0);
+    	double sigmaYY = elmStressVec.at(1);
+    	double sigmaXY = elmStressVec.at(2);
+
+    	double lambdaOne = 0;
+    	double lambdaTwo = 0;
+
+    	double b = -sigmaXX - sigmaYY;
+    	double c = (sigmaXX * sigmaYY) - (sigmaXY * sigmaXY);
+    	double sqrtTerm = sqrt((b * b) - (4 * c));
+
+    	double lambdaHelperOne = ((-1 * b) + (sqrtTerm)) / 2; 
+    	double lambdaHelperTwo = ((-1 * b) - (sqrtTerm)) / 2;
+
+    	double sigmaMin = 0;
+    	double sigmaMax = 0;
+    	
+    	std::vector<double> elmSigma;
+
+    	if (lambdaHelperOne > lambdaHelperTwo)
+    	{
+    		sigmaMin = lambdaHelperTwo;
+    		sigmaMax = lambdaHelperOne;
+    	}
+    	else
+    	{
+    		sigmaMin = lambdaHelperOne;
+    		sigmaMax = lambdaHelperTwo;
+    	}
+
+    	if (sigmaMin > 0)
+    	{
+    		sigmaMin = 0;
+    	}
+    	if (sigmaMax < 0)
+    	{
+    		sigmaMax = 0;
+    	}
+
+    	elmSigma.push_back(sigmaMin);
+    	elmSigma.push_back(sigmaMax);
+
+    	if (sigmaMin < sigmaMinAll && sigmaMin > (50 * sigmaMinAverage)) // To avoid stress localization effect
+    	{
+    		sigmaMinAll = sigmaMin;
+    	}
+    	if (sigmaMax > sigmaMaxAll && sigmaMax < (50 * sigmaMaxAverage))
+    	{
+    		sigmaMaxAll = sigmaMax;
+    	}
+    	compressiveTensileStresses.push_back(vector<double>{ sigmaMin, sigmaMax });
+	}
+
+    return compressiveTensileStresses;
+}
+
+vector<double> SigmaMinMaxCalculator(vector<Element> elmVec, vector<vector<double>> principleStressVector)
+{
+	vector<double> sigmaMinMax;
+    double sigmaMinAll = 0;
+    double sigmaMaxAll = 0;
+
+    for (int i = 0; i < elmVec.size(); ++i)
+    {
+    	Element elm = elmVec.at(i);
+    	std::vector<double> elmStressVec = principleStressVector.at(i);
+    	double sigmaXX = elmStressVec.at(0);
+    	double sigmaYY = elmStressVec.at(1);
+    	double sigmaXY = elmStressVec.at(2);
+
+    	double lambdaOne = 0;
+    	double lambdaTwo = 0;
+
+    	double b = -sigmaXX - sigmaYY;
+    	double c = (sigmaXX * sigmaYY) - (sigmaXY * sigmaXY);
+    	double sqrtTerm = sqrt((b * b) - (4 * c));
+
+    	double lambdaHelperOne = ((-1 * b) + (sqrtTerm)) / 2; 
+    	double lambdaHelperTwo = ((-1 * b) - (sqrtTerm)) / 2;
+
+    	double sigmaMin = 0;
+    	double sigmaMax = 0;
+    	
+    	std::vector<double> elmSigma;
+
+    	if (lambdaHelperOne > lambdaHelperTwo)
+    	{
+    		sigmaMin = lambdaHelperTwo;
+    		sigmaMax = lambdaHelperOne;
+    	}
+    	else
+    	{
+    		sigmaMin = lambdaHelperOne;
+    		sigmaMax = lambdaHelperTwo;
+    	}
+
+    	if (sigmaMin > 0)
+    	{
+    		sigmaMin = 0;
+    	}
+    	if (sigmaMax < 0)
+    	{
+    		sigmaMax = 0;
+    	}
+
+    	elmSigma.push_back(sigmaMin);
+    	elmSigma.push_back(sigmaMax);
+
+    	if (sigmaMin < sigmaMinAll)
+    	{
+    		sigmaMinAll = sigmaMin;
+    	}
+    	if (sigmaMax > sigmaMaxAll)
+    	{
+    		sigmaMaxAll = sigmaMax;
+    	}
+	}
+	sigmaMinMax.push_back(sigmaMinAll);
+	sigmaMinMax.push_back(sigmaMaxAll);
+    return sigmaMinMax;
+}
+
+vector<Element> ElementModificator(vector<Element> elmVec, vector<double> dispVector, double e, double v, double meshSize, double thickness, vector<double> fGlobal, int nDof, int nDofRestrained, vector<Node> nodeVec, int controlDof, double controlDisplacement, vector<NaturalBC> nbcVector)
+{
+	PrincipleStressCalculator pSC(elmVec, dispVector, e, v, meshSize);
+    std::vector<std::vector<double>> principleStressVector(elmVec.size());
+    principleStressVector = pSC.PrincipleStressList;
+    
+    vector<vector<double>> compressiveTensileStresses = MainStressCalculator(elmVec, principleStressVector);
+
+    // Element modification part
+    vector<Element> ModifiedElmVec = elmVec;   
+    vector<double> sigmaMinMax = SigmaMinMaxCalculator(elmVec, principleStressVector);
+
+    double sigmaMinAll = sigmaMinMax.at(0);
+    double sigmaMaxAll = sigmaMinMax.at(1);
+
+    for (int i = 0; i < elmVec.size(); ++i)
+    {
+    	Element elm = elmVec.at(i);
+    	std::vector<double> elmPrincipleStresses = compressiveTensileStresses.at(i);
+    	
+    	double elmCompStress = elmPrincipleStresses.at(0);
+    	double elmTensStress = elmPrincipleStresses.at(1);
+
+    	double alpha = elmCompStress / sigmaMinAll;
+    	double beta = elmTensStress / sigmaMaxAll;
+
+    	double modificationFactor = 1;
+
+    	if (alpha > beta)
+    	{
+    		modificationFactor = alpha;
+    	}
+    	else
+    	{
+    		modificationFactor = beta;
+    	}
+
+    	cout << "Element index = "<<i + 1<<", Modification Factor = "<<modificationFactor<<endl;
+
+    	double kElm[8][8] = { { 0 } };
+
+    	for (int j = 0; j < 8; ++j)
+    	{
+    		for (int k = 0; k < 8; ++k)
+    		{
+    			kElm[j][k] = elm.ElementMatrix[j][k] * modificationFactor;
+    		}
+    	}
+
+    	Element modifiedElement(elm.ElementIndex, elm.FirstNode, elm.SecondNode, elm.ThirdNode, elm.FourthNode, kElm, modificationFactor);
+    	ModifiedElmVec.at(i) = modifiedElement;
+    }
+
+    StiffnessMatrixAssembler modSMA(ModifiedElmVec, nDof);
+    std::vector<std::vector<double>> kGlobal = modSMA.GetGlobalStiffnessMatrix(ModifiedElmVec, nDof);
+    ForceVectorAssembler modFVA(nodeVec, nbcVector, meshSize, nDof);
+    fGlobal = modFVA.ForceVector;
+    DisplacementCalculator modDispCal(kGlobal, fGlobal, nDof, nDofRestrained);
+    dispVector = modDispCal.DisplacementVector;
+    
+    // Multiply elasticity matrix with displacementModificationFactor
+    double monitoredDisp = dispVector.at(controlDof - 1);
+    double displacementModificationFactor = monitoredDisp / controlDisplacement;
+
+    cout<<"Monitorred Displacement = "<<monitoredDisp<<endl;
+    cout<<"Control Displacement = "<<controlDisplacement<<endl;
+    cout<<"Convergence Ratio = "<< controlDisplacement / monitoredDisp<<endl;
+    
+    vector<Element> newModifiedElementVec;
+
+    for (int i = 0; i < ModifiedElmVec.size(); ++i)
+    {
+    	Element elm = ModifiedElmVec.at(i);
+
+    	double kElm[8][8] = { { 0 } };
+
+    	for (int j = 0; j < 8; ++j)
+    	{
+    		for (int k = 0; k < 8; ++k)
+    		{
+    			kElm[j][k] = elm.ElementMatrix[j][k] * displacementModificationFactor;
+    		}
+    	}
+
+    	Element modifiedElement(elm.ElementIndex, elm.FirstNode, elm.SecondNode, elm.ThirdNode, elm.FourthNode, kElm, elm.StiffnessModifier * displacementModificationFactor);
+    	newModifiedElementVec.push_back(modifiedElement);
+    	cout << "Element index = "<<i + 1<<", New Modification Factor = "<< elm.StiffnessModifier * displacementModificationFactor <<endl;
+    }
+	
+    return newModifiedElementVec;
 }
 
 int main()
@@ -43,22 +313,19 @@ int main()
     vector<double> dimVector{ lX, lY };
     vector<double> controlPointCoord{ controlPointX, controlPointY};
 
-
     // Material properties
     double e = 36000000000; // Elasticity modululus in Pa
     double v = 0.3; // Poisson's ratio
-    double rho = 0; // Density of material in kg/m3 (if mass is not gonna be encountered, simply send it as "0")
+    double rho = 0.0; // Density of material in kg/m3 (if mass is not gonna be encountered, simply send it as "0")
 
     // Info of mesh
-    double meshSize = 0.5; // in meters
+    double meshSize = 0.50; // in meters
     string meshType = "Quad";  // It is either "Quad" or "Triangular". Triangular mesh is not prepared yet (2020.05.21)
 
     // Info of gap(s)
     //Gap firstGap(2.2, 3.8, 0, 1.5);
  	Gap nullGap(-1, -1, -1, -1);
     vector<Gap> gapVector{ nullGap };
-
-    // TODO : For now, if there is no gap, Gap nullGap(-1, -1, -1, -1). Define it and add to gapVector. But there is a need of improvement for that case.
 
     // Essential bc's on primary variable (Displacements in case of elasticity problem)
     //EssentialBC nullEBC(-1, -1, -1, -1, -1, -1);
@@ -67,8 +334,6 @@ int main()
     vector<EssentialBC> ebcVector{ ebcFirst, ebcSecond };
 
     //// Natural bc's on secondary variable (Forces in case of elasticity problem)
-    /*NaturalBC firstNBC(0, 0, 0, 0, 0, 221667);
-    NaturalBC secondNBC(6, 6, 0, 0, 0, 128333);*/
     NaturalBC firstNBC(3, 3, 3, 3, 0, -350000);
     vector<NaturalBC> nbcVector{ firstNBC };
     double tol = 0.001; // Set tolerance value to check equality
@@ -180,7 +445,6 @@ int main()
     StiffnessMatrixFile.open("Outputs/AnalysisOutputs/StiffnessMatrix");
     ForceVectorFile.open("Outputs/AnalysisOutputs/ForceVectorFile");
     DisplacementFile.open("Outputs/AnalysisOutputs/DisplacementFile");
-    SupportReactionsFile.open("Outputs/AnalysisOutputs/SupportReactions");
 
     for (int i = 0; i < nDof; ++i)
     {
@@ -194,7 +458,11 @@ int main()
         StiffnessMatrixFile << "\n";
         ForceVectorFile << fGlobal.at(i);
         ForceVectorFile << "\n";
+        DisplacementFile <<"Displacement at Dof ";
+        DisplacementFile << i + 1;
+        DisplacementFile <<" = ";
         DisplacementFile << dispVector.at(i);
+        DisplacementFile << " m";
         DisplacementFile << "\n";
 
     }
@@ -203,242 +471,35 @@ int main()
     ForceVectorFile.close();
     DisplacementFile.close();
     
-    for (int i = 0; i < nDofRestrained; ++i)
-    {
-        SupportReactionsFile << supportReactions.at(i);
-        SupportReactionsFile << "\n";
-    }
-    
-    SupportReactionsFile.close();
-
     cout<<"Displacements are calculated"<<endl;
 
     PrincipleStressCalculator pSC(elmVec, dispVector, e, v, meshSize);
     std::vector<std::vector<double>> principleStressVector(elmVec.size());
     principleStressVector = pSC.PrincipleStressList;
-    int stressListSize = principleStressVector.size();
     
     cout<< "Principle stresses are calculated"<<endl;
-    
-	ofstream PrincipleStressFile;
-	PrincipleStressFile.open("Outputs/AnalysisOutputs/PrincipleStresses");    
+	vector<vector<double>> MainStresses = MainStressCalculator(elmVec, principleStressVector);
 
-    for (int i = 0; i < stressListSize; ++i)
-    {
-    	std::vector<double> elmStress = principleStressVector.at(i);
-    	double sigmaXX = elmStress.at(0) * 0.000001;
-    	double sigmaYY = elmStress.at(1) * 0.000001;
-    	double sigmaXY = elmStress.at(2) * 0.000001;
-    	PrincipleStressFile <<"Element No: ";
-    	PrincipleStressFile << (i + 1);
-    	PrincipleStressFile <<"\n";
-    	PrincipleStressFile <<"Stress in XX-Direction = ";
-    	PrincipleStressFile <<sigmaXX;
-    	PrincipleStressFile <<"\n";
-    	PrincipleStressFile <<"Stress in YY-Direction = ";
-    	PrincipleStressFile <<sigmaYY;
-    	PrincipleStressFile <<"\n";
-    	PrincipleStressFile <<"Stress in XY-Direction = ";;
-    	PrincipleStressFile <<sigmaXY;
-    	PrincipleStressFile <<"\n";
-    }
-    PrincipleStressFile.close();
-
-    double sigmaMinAll = 0;
-    double sigmaMaxAll = 0;
-
-    std::vector<std::vector<double>> compressiveTensileStresses;
-
-    ofstream MainStressFile;
-    MainStressFile.open("Outputs/AnalysisOutputs/MainStressFile");
-
-    for (int i = 0; i < elmVec.size(); ++i)
-    {
-    	Element elm = elmVec.at(i);
-    	std::vector<double> elmStressVec = principleStressVector.at(i);
-    	double sigmaXX = elmStressVec.at(0);
-    	double sigmaYY = elmStressVec.at(1);
-    	double sigmaXY = elmStressVec.at(2);
-
-    	double lambdaOne = 0;
-    	double lambdaTwo = 0;
-
-    	double b = -sigmaXX - sigmaYY;
-    	double c = (sigmaXX * sigmaYY) - (sigmaXY * sigmaXY);
-    	double sqrtTerm = sqrt((b * b) - (4 * c));
-
-    	double lambdaHelperOne = ((-1 * b) + (sqrtTerm)) / 2; 
-    	double lambdaHelperTwo = ((-1 * b) - (sqrtTerm)) / 2;
-
-    	double sigmaMin = 0;
-    	double sigmaMax = 0;
-    	
-    	std::vector<double> elmSigma;
-
-    	if (lambdaHelperOne > lambdaHelperTwo)
-    	{
-    		sigmaMin = lambdaHelperTwo;
-    		sigmaMax = lambdaHelperOne;
-    	}
-    	else
-    	{
-    		sigmaMin = lambdaHelperOne;
-    		sigmaMax = lambdaHelperTwo;
-    	}
-
-    	if (sigmaMin > 0)
-    	{
-    		sigmaMin = 0;
-    	}
-    	if (sigmaMax < 0)
-    	{
-    		sigmaMax = 0;
-    	}
-
-    	elmSigma.push_back(sigmaMin);
-    	elmSigma.push_back(sigmaMax);
-
-    	if (sigmaMin < sigmaMinAll)
-    	{
-    		sigmaMinAll = sigmaMin;
-    	}
-    	if (sigmaMax > sigmaMaxAll)
-    	{
-    		sigmaMaxAll = sigmaMax;
-    	}
-    	compressiveTensileStresses.push_back(vector<double>{ sigmaMin, sigmaMax });
-    	MainStressFile << "Element Index ";
-    	MainStressFile << i + 1;
-    	MainStressFile << "\n";
-    	MainStressFile << "Compressive Stress = ";
-    	MainStressFile << sigmaMin * 0.000001;
-    	MainStressFile << "MPa \n";
-    	MainStressFile << "Tensile  Stress = ";
-    	MainStressFile << sigmaMax * 0.000001;
-    	MainStressFile << "MPa \n";
+	ofstream MainStressesFile; 
+	MainStressesFile.open("Outputs/AnalysisOutputs/MainStressesFile");
+	for (int i = 0; i < MainStresses.size(); ++i)
+	{
+		vector<double> stressCouple = MainStresses.at(i);
+		MainStressesFile<<"Element Index ";
+		MainStressesFile<<(i + 1);
+		MainStressesFile<<"\n";
+		MainStressesFile<<"Compressive Stress = ";
+		MainStressesFile<<stressCouple.at(0) * 0.000001;
+		MainStressesFile<<" MPa";
+		MainStressesFile<<"\n";
+		MainStressesFile<<"Tensile Stress = ";
+		MainStressesFile<<stressCouple.at(1) * 0.000001;
+		MainStressesFile<<" MPa";
+		MainStressesFile<<"\n";
 	}
+	MainStressesFile.close();
 
-    MainStressFile.close();
-
-
-    // Element modification part
-    std::vector<Element> ModifiedElmVec = elmVec;
-    
-    for (int i = 0; i < ModifiedElmVec.size(); ++i)
-    {
-    	Element elm = ModifiedElmVec.at(i);
-    	std::vector<double> elmPrincipleStresses = compressiveTensileStresses.at(i);
-    	
-    	double elmCompStress = elmPrincipleStresses.at(0);
-    	double elmTensStress = elmPrincipleStresses.at(1);
-
-    	double alpha = elmCompStress / sigmaMinAll;
-    	double beta = elmTensStress / sigmaMaxAll;
-
-    	double modificationFactor = 1;
-
-    	if (alpha > beta)
-    	{
-    		modificationFactor = alpha;
-    	}
-    	else
-    	{
-    		modificationFactor = beta;
-    	}
-
-		double mult =  thickness * e * meshSize / (1 - (v * v)) * modificationFactor;
-
-    	double kElm[8][8];
-
-    	kElm[0][0] = mult * (3 - v) / (6);
-    	kElm[0][1] = mult * (1 + v) / (8);
-    	kElm[0][2] = mult * (-3 - v) / (12);
-    	kElm[0][3] = mult * (-1 + 3 * v) / (8);
-    	kElm[0][4] = mult * (-3 + v) / (12);
-    	kElm[0][5] = mult * (-1 - v) / (8);
-    	kElm[0][6] = mult * (v) / (6);
-    	kElm[0][7] = mult * (1 - 3 * v) / (8);
-
-    	kElm[1][0] = kElm[0][1];
-    	kElm[1][1] = mult * (3 - v) / (6);
-    	kElm[1][2] = mult * (1 - 3 * v) / (8);
-    	kElm[1][3] = mult * (v) / (6);
-    	kElm[1][4] = mult * (-1 + v) / (8);
-    	kElm[1][5] = mult * (-3 + v) / (12);
-    	kElm[1][6] = mult * (-1 + 3 * v) / (8);
-    	kElm[1][7] = mult * (-3 + v) / (12);
-
-    	kElm[2][0] = kElm[0][2];
-    	kElm[2][1] = kElm[1][2];
-    	kElm[2][2] = mult * (3 - v) / (6);
-    	kElm[2][3] = mult * (-1 - v) / (8);
-    	kElm[2][4] = mult * (v) / (6);
-    	kElm[2][5] = mult * (-1 + 3 * v) / (8);
-    	kElm[2][6] = mult * (-3 + v) / (12);
-    	kElm[2][7] = mult * (1 + v) / (8);
-
-    	kElm[3][0] = kElm[0][3];
-    	kElm[3][1] = kElm[1][3];
-    	kElm[3][2] = kElm[2][3];
-    	kElm[3][3] = mult * (3 - v) / (6);
-    	kElm[3][4] = mult * (1 - 3 * v) / (8);
-    	kElm[3][5] = mult * (-3 - v) / (12);
-    	kElm[3][6] = mult * (1 + v) / (8);
-    	kElm[3][7] = mult * (-3 + v) / (12);
-
-    	kElm[4][0] = kElm[0][4];
-    	kElm[4][1] = kElm[1][4];
-    	kElm[4][2] = kElm[2][4];
-    	kElm[4][3] = kElm[3][4];
-    	kElm[4][4] = mult * (3 - v) / (6);
-    	kElm[4][5] = mult * (1 + v) / (8);
-    	kElm[4][6] = mult * (-3 - v) / (12);
-    	kElm[4][7] = mult * (-1 + 3 * v) / (8);
-
-    	kElm[5][0] = kElm[0][5];
-    	kElm[5][1] = kElm[1][5];
-    	kElm[5][2] = kElm[2][5];
-    	kElm[5][3] = kElm[3][5];
-    	kElm[5][4] = kElm[4][5];
-    	kElm[5][5] = mult * (3 - v) / (6);
-    	kElm[5][6] = mult * (1 - 3 * v) / (8);
-    	kElm[5][7] = mult * (v) / (6);
-
-    	kElm[6][0] = kElm[0][6];
-    	kElm[6][1] = kElm[1][6];
-    	kElm[6][2] = kElm[2][6];
-    	kElm[6][3] = kElm[3][6];
-    	kElm[6][4] = kElm[4][6];
-    	kElm[6][5] = kElm[5][6];
-    	kElm[6][6] = mult * (3 - v) / (6);
-    	kElm[6][7] = mult * (-1 - v) / (8);
-
-    	kElm[7][0] = kElm[0][7];
-    	kElm[7][1] = kElm[1][7];
-    	kElm[7][2] = kElm[2][7];
-    	kElm[7][3] = kElm[3][7];
-    	kElm[7][4] = kElm[4][7];
-    	kElm[7][5] = kElm[5][7];
-    	kElm[7][6] = kElm[6][7];
-    	kElm[7][7] = mult * (3 - v) / (6);
-
-    	Element modifiedElement(elm.ElementIndex, elm.FirstNode, elm.SecondNode, elm.ThirdNode, elm.FourthNode, kElm, 1);
-    	ModifiedElmVec.at(i) = modifiedElement;
-    }
-
-    StiffnessMatrixAssembler modSMA(ModifiedElmVec, nDof);
-    kGlobal = modSMA.GetGlobalStiffnessMatrix(ModifiedElmVec, nDof);
-    ForceVectorAssembler modFVA(nodeVec, nbcVector, meshSize, nDof);
-    fGlobal = modFVA.ForceVector;
-    DisplacementCalculator modDispCal(kGlobal, fGlobal, nDof, nDofRestrained);
-    dispVector = modDispCal.DisplacementVector;
-    PrincipleStressCalculator modPSC(elmVec, dispVector, e, v, meshSize);
-    principleStressVector = modPSC.PrincipleStressList;
-    
-    double monitoredDisp = dispVector.at(controlDof - 1);
-    double displacementModificationFactor = monitoredDisp / controlDisplacement;
-
-
+    cout<<"Design begins"<<endl;
 
     //auto timenow2 =
     //        chrono::system_clock::to_time_t(chrono::system_clock::now());

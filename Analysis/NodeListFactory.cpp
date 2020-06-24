@@ -16,7 +16,7 @@ std::vector<Node> NodeListFactory::GetNodeList(std::vector<double> dimVector, st
     std::vector<Node> nodeList;
     std::vector<Node> restrainedNodeList;
 
-    double tol = 0.0000000001;
+    double tol = 0.0001;
 
     double lX = dimVector[0];
     double lY = dimVector[1];

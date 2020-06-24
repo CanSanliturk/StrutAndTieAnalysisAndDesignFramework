@@ -1,0 +1,32 @@
+Element modification part that excluded from source code for now
+    // Element modification part
+    /*vector<Element> ModifiedElmVec = ElementModificator(elmVec, dispVector, e, v, meshSize, thickness, fGlobal, nDof, nDofRestrained, nodeVec, controlDof, controlDisplacement, nbcVector);
+    StiffnessMatrixAssembler modifiedSMA(ModifiedElmVec, nDof);
+    vector<vector<double>> modifiedKGlobal = modifiedSMA.GetGlobalStiffnessMatrix(ModifiedElmVec, nDof);
+    ForceVectorAssembler modifiedFVA(nodeVec, nbcVector, meshSize, nDof);
+    vector<double> modifiedFGlobal = modifiedFVA.ForceVector;
+    DisplacementCalculator modifiedDispCal(modifiedKGlobal, modifiedFGlobal, nDof, nDofRestrained);
+    std::vector<double> modifiedDispVector = modifiedDispCal.DisplacementVector;
+    PrincipleStressCalculator modifiedPSC(ModifiedElmVec, modifiedDispVector, e, v, meshSize);
+    vector<vector<double>> modifiedPrincipleStressVector = modifiedPSC.PrincipleStressList;
+    vector<vector<double>> modifiedCompressiveTensileStresses = MainStressCalculator(ModifiedElmVec, modifiedPrincipleStressVector);
+
+    ofstream ModifiedMainStressFile;
+    ModifiedMainStressFile.open("Outputs/AnalysisOutputs/ModifiedMainStressFile");
+    cout<<"Monitorred displacement = "<<modifiedDispVector.at(controlDof - 1)<<endl;
+    cout<<"Control displacement = "<<controlDisplacement<<endl;
+    for (int i = 0; i < modifiedCompressiveTensileStresses.size(); ++i)
+    {
+    	vector<double> stressCouple = modifiedCompressiveTensileStresses.at(i);
+    	double sigmaMin = stressCouple.at(0);
+    	double sigmaMax = stressCouple.at(1);
+    	ModifiedMainStressFile << "Element Index ";
+    	ModifiedMainStressFile << i + 1;
+    	ModifiedMainStressFile << "\n";
+    	ModifiedMainStressFile << "Compressive Stress = ";
+    	ModifiedMainStressFile << sigmaMin * 0.000001;
+    	ModifiedMainStressFile << "MPa \n";
+    	ModifiedMainStressFile << "Tensile  Stress = ";
+    	ModifiedMainStressFile << sigmaMax * 0.000001;
+    	ModifiedMainStressFile << "MPa \n";
+    }
