@@ -316,7 +316,7 @@ int main()
     double rho = 0.0; // Density of material in kg/m3 (if mass is not gonna be encountered, simply send it as "0")
 
     // Info of mesh
-    double meshSize = 0.5; // in meters
+    double meshSize = 0.1; // in meters
     string meshType = "Quad";  // It is either "Quad" or "Triangular". Triangular mesh is not prepared yet (2020.05.21)
 
     // Info of gap(s)
