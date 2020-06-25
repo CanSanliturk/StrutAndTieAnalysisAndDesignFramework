@@ -1,0 +1,15 @@
+Stress check...
+ØFn = Ø * 0.85 * fc where Ø = 075
+Maximum Compressive Stress for an element = 1.6831 MPa
+ØFn = 12.75 MPa
+Fu = 1.6831 MPa
+ØFn => Fu
+Compressive stress is within limits. Design can be conducted.
+
+Vertical Reinforcement Design
+Use 4 Ø12/200 mm
+(p_v = 0.00452389 > 0.0025  -> OK ✔
+
+Horizontal Reinforcement Design
+Use 4 Ø12/200 mm
+(p_v = 0.00452389 > 0.0025  -> OK ✔

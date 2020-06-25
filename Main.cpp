@@ -14,7 +14,6 @@
 #include "Analysis/Headers/ForceVectorAssembler.h"
 #include "Analysis/Headers/DisplacementCalculator.h"
 #include "Analysis/Headers/PrincipleStressCalculator.h"
-#include "Analysis/Headers/DesignElement.h"
 #include <armadillo>
 
 using namespace std;
@@ -266,10 +265,6 @@ vector<Element> ElementModificator(vector<Element> elmVec, vector<double> dispVe
     double monitoredDisp = dispVector.at(controlDof - 1);
     double displacementModificationFactor = monitoredDisp / controlDisplacement;
 
-    cout<<"Monitorred Displacement = "<<monitoredDisp<<endl;
-    cout<<"Control Displacement = "<<controlDisplacement<<endl;
-    cout<<"Convergence Ratio = "<< controlDisplacement / monitoredDisp<<endl;
-    
     vector<Element> newModifiedElementVec;
 
     for (int i = 0; i < ModifiedElmVec.size(); ++i)
@@ -293,6 +288,13 @@ vector<Element> ElementModificator(vector<Element> elmVec, vector<double> dispVe
     return newModifiedElementVec;
 }
 
+double CalculateShearReinforcementRatio(double dia, double nRow, double spacing, double thickness)
+{
+    double rho = 0;
+    rho = (nRow * 3.141593 * dia * dia * 0.25) / (spacing * thickness);
+    return rho;
+}
+
 int main()
 {
     /// INPUT CARD ///
@@ -314,6 +316,10 @@ int main()
     double e = 36000000000; // Elasticity modululus in Pa
     double v = 0.0; // Poisson's ratio
     double rho = 0.3; // Density of material in kg/m3 (if mass is not gonna be encountered, simply send it as "0")
+    double fC = 20000000; // Compressive strength of concrete in Pa. Pay attention that it is the design strength
+    double fY = 420000000; // Yield strength of steel in Pa. Pay attention that it is the design strength
+    double longitudinalBarDiameter = 0.014; // Tension bars diameter in meters
+    double transverseBarDiameter = 0.012; // Transverse bars diameters in meters
 
     // Info of mesh
     double meshSize = 0.5; // in meters
@@ -335,11 +341,11 @@ int main()
     vector<NaturalBC> nbcVector{ firstNBC };
     double tol = 0.001; // Set tolerance value to check equality
 
-    /// SOLVER PART /// This part is going to be moved to a seperate class named as solver
+    /// SOLVER PART /// 
     double controlDisplacement = 0;
     cout<<"Beginning of analysis"<<endl;
-    //auto timenow =
-    //        chrono::system_clock::to_time_t(chrono::system_clock::now());
+    auto timenow =
+            chrono::system_clock::to_time_t(chrono::system_clock::now());
 
     NodeListFactory nLF(dimVector, gapVector, ebcVector, nbcVector,  meshSize);
     vector<Node> nodeVec = nLF.NodeList;
@@ -442,7 +448,14 @@ int main()
     StiffnessMatrixFile.open("Outputs/AnalysisOutputs/StiffnessMatrix");
     ForceVectorFile.open("Outputs/AnalysisOutputs/ForceVectorFile");
     DisplacementFile.open("Outputs/AnalysisOutputs/DisplacementFile");
-
+    SupportReactionsFile.open("Outputs/AnalysisOutputs/SupportReactionsFile");
+    for (int i = 0; i < supportReactions.size(); ++i)
+    {
+        double supportReaction = supportReactions.at(i);
+        SupportReactionsFile << supportReaction;
+        SupportReactionsFile << "\n";
+    }
+    SupportReactionsFile.close();
     for (int i = 0; i < nDof; ++i)
     {
         
@@ -517,7 +530,6 @@ int main()
     vector<Element> controlElmVector = ModifiedElmVec;
 	for (int i = 0; i < 10; ++i)
 	{
-		cout<<"\n";
 		cout<<"Elements are being modified";    	
 		cout<<"\n";
 		ModifiedElmVec =  ElementModificator(controlElmVector, dispVector, e, v, meshSize, thickness, fGlobal, nDof, nDofRestrained, nodeVec, controlDof, controlDisplacement, nbcVector);
@@ -540,10 +552,16 @@ int main()
     	}
     }
 
+    cout<<"Element modification according to principal stresses"<<endl;
+    cout<<"and displacement correction is completed"<<endl;
+
     ofstream ModifiedMainStressFile;
     ModifiedMainStressFile.open("Outputs/AnalysisOutputs/ModifiedMainStressFile");
-    cout<<"Monitorred displacement = "<<modifiedDispVector.at(controlDof - 1)<<endl;
-    cout<<"Control displacement = "<<controlDisplacement<<endl;
+
+    double nom = 0;
+    double denom = 0;
+
+    double maxCompressiveStress;
 
     for (int i = 0; i < modifiedCompressiveTensileStresses.size(); ++i)
     {
@@ -554,11 +572,218 @@ int main()
     	ModifiedMainStressFile << " ";
     	ModifiedMainStressFile << sigmaMax * 0.000001;
     	ModifiedMainStressFile << "\n";
+
+        if (sigmaMax > tol)
+        {
+            nom += sigmaMax;
+            denom++;
+        }
+
+        if (sigmaMin < maxCompressiveStress)
+        {
+            maxCompressiveStress = sigmaMin;
+        }
+    }
+    cout<<"Analysis is completed"<<endl;
+    cout<<"See Outputs file for Analysis Outputs"<<endl;
+    cout<<"Stable system is obtained. Design procedure starts..."<<endl;
+
+    ofstream ShearDesignOutput;
+    ofstream TensileDesignOutput;
+    TensileDesignOutput.open("Outputs/DesignOutputs/TensileDesignOutputs");    
+    ShearDesignOutput.open("Outputs/DesignOutputs/ShearDesignOutputs");
+
+    // Tensile Design
+    if (IsEqual(denom, 0.0, tol))
+    {
+        cout<<"There is no element in tension. Only shear reinforcements are designed"<<endl;
+        TensileDesignOutput<<"There is no elements in tension. Only shear reinforcements are designed"<<endl;
+    }
+    else
+    {
+        TensileDesignOutput<<"Note that Yield Stress is multiplied by 0.75 in design";
+        TensileDesignOutput<<"\n";
+        TensileDesignOutput<<"-------------------------------------------------------";
+        TensileDesignOutput<<"\n";
+        TensileDesignOutput<<"\n";
+
+        double diaMM = longitudinalBarDiameter * 1000;
+        double barArea = 3.141593 * longitudinalBarDiameter * longitudinalBarDiameter / 4;
+        double averageTensileStress = nom / denom;
+        for (int i = 0; i < ModifiedElmVec.size(); ++i)
+        {
+            Element elm = ModifiedElmVec.at(i);
+            vector<double> stressCouple = modifiedCompressiveTensileStresses.at(i);
+            double tensileStress = stressCouple.at(1);
+            
+            if (tensileStress > averageTensileStress)
+            {
+                TensileDesignOutput<<"Tensile Design For Element#";
+                TensileDesignOutput<<elm.ElementIndex;
+                TensileDesignOutput<<"\n";
+                double requiredArea = (tensileStress / (fY * 0.75)) * (thickness * meshSize);
+                TensileDesignOutput<<"Required Area = ";
+                TensileDesignOutput<<requiredArea * 1000000;
+                TensileDesignOutput<<" mm^2";
+                TensileDesignOutput<<"\n";
+                TensileDesignOutput<<"Use ";
+                TensileDesignOutput<< ceil(requiredArea / barArea);
+                TensileDesignOutput<<"Ø";
+                TensileDesignOutput<<diaMM;
+                TensileDesignOutput<<"\n";
+                TensileDesignOutput<<"Provided Area = ";
+                TensileDesignOutput<< ceil(requiredArea / barArea) * barArea * 1000000;
+                TensileDesignOutput<< " mm^2";
+                TensileDesignOutput<<"\n";
+                TensileDesignOutput<<"A_provided > A_required -> OK ✔";
+                TensileDesignOutput<<"\n";
+                TensileDesignOutput<<"\n";
+
+            }
+        }
     }
 
-    cout<<"Stable system is obtained. Design procedure starts..."<<endl;
-    //auto timenow2 =
-    //        chrono::system_clock::to_time_t(chrono::system_clock::now());
-    //cout<< "Elapsed Time = " << timenow2 - timenow << " seconds"<< endl;
+    // Shear Design
+    ShearDesignOutput<<"Stress check...";
+    ShearDesignOutput<<"\n";
+    ShearDesignOutput<<"ØFn = Ø * 0.85 * fc where Ø = 075";
+    ShearDesignOutput<<"\n";
+    ShearDesignOutput<<"Maximum Compressive Stress for an element = ";
+    ShearDesignOutput<<-1 * maxCompressiveStress * 0.000001;
+    ShearDesignOutput<<" MPa";
+    ShearDesignOutput<<"\n";
+    ShearDesignOutput<<"ØFn = ";
+    ShearDesignOutput<<0.75 * 0.85 * fC * 0.000001;
+    ShearDesignOutput<<" MPa";
+    ShearDesignOutput<<"\n";
+    ShearDesignOutput<<"Fu = ";
+    ShearDesignOutput<<-1 * maxCompressiveStress * 0.000001;
+    ShearDesignOutput<<" MPa";
+    ShearDesignOutput<<"\n";
+    
+    if (-1 * maxCompressiveStress > (0.75 * 0.85 * fC))
+    {
+        ShearDesignOutput<<"ØFn < Fu";
+        ShearDesignOutput<<"\n";
+        ShearDesignOutput<<"Compressive stress is above limits. You may increase thickness or use concrete of higher strength...";
+    }
+    else
+    {
+        double transverseDiaMM = transverseBarDiameter * 1000;
+        ShearDesignOutput<<"ØFn => Fu";
+        ShearDesignOutput<<"\n";
+        ShearDesignOutput<<"Compressive stress is within limits. Design can be conducted.";
+        ShearDesignOutput<<"\n";
+        ShearDesignOutput<<"\n";
+        ShearDesignOutput<<"Vertical Reinforcement Design";
+        ShearDesignOutput<<"\n";
+        int nRow = ceil(thickness / 0.1) - 1;
+        double rho200 = CalculateShearReinforcementRatio(transverseBarDiameter, nRow, 0.2, thickness);
+        double rho100 = CalculateShearReinforcementRatio(transverseBarDiameter, nRow, 0.1, thickness);
+        double rho50 = CalculateShearReinforcementRatio(transverseBarDiameter, nRow, 0.05, thickness);
+
+        if (rho200 > 0.0025)
+        {
+            ShearDesignOutput<<"Use ";
+            ShearDesignOutput<<nRow;
+            ShearDesignOutput<<" Ø";
+            ShearDesignOutput<<transverseDiaMM;
+            ShearDesignOutput<<"/200 mm";
+            ShearDesignOutput<<"\n";
+            ShearDesignOutput<<"(p_v = ";
+            ShearDesignOutput<<rho200;
+            ShearDesignOutput<<" > 0.0025  -> OK ✔";
+        }
+        else if (rho100 > 0.0025)
+        {
+            ShearDesignOutput<<"Use ";
+            ShearDesignOutput<<nRow;
+            ShearDesignOutput<<" Ø";
+            ShearDesignOutput<<transverseDiaMM;
+            ShearDesignOutput<<"/100 mm";
+            ShearDesignOutput<<"\n";
+            ShearDesignOutput<<"(p_v = ";
+            ShearDesignOutput<<rho100;
+            ShearDesignOutput<<" > 0.0025  -> OK ✔";
+        }
+        else if (rho50 > 0.0025)
+        {
+            ShearDesignOutput<<"Use ";
+            ShearDesignOutput<<nRow;
+            ShearDesignOutput<<" Ø";
+            ShearDesignOutput<<transverseDiaMM;
+            ShearDesignOutput<<"/50 mm";
+            ShearDesignOutput<<"\n";
+            ShearDesignOutput<<"(p_v = ";
+            ShearDesignOutput<<rho50;
+            ShearDesignOutput<<" > 0.0025  -> OK ✔";
+        }
+        else
+        {
+            ShearDesignOutput<<"Could not find a configuration for vertical shear reinforcement.";
+            ShearDesignOutput<<"\n";
+            ShearDesignOutput<<"Please increase transverse reinforcement bar diameter";
+        }
+        
+        ShearDesignOutput<<"\n";
+        ShearDesignOutput<<"\n";
+        ShearDesignOutput<<"Horizontal Reinforcement Design";
+        ShearDesignOutput<<"\n";
+        double rho200Hor = CalculateShearReinforcementRatio(transverseBarDiameter, nRow, 0.2, thickness);
+        double rho100Hor = CalculateShearReinforcementRatio(transverseBarDiameter, nRow, 0.1, thickness);
+        double rho50Hor= CalculateShearReinforcementRatio(transverseBarDiameter, nRow, 0.05, thickness);
+
+        if (rho200Hor > 0.0025)
+        {
+            ShearDesignOutput<<"Use ";
+            ShearDesignOutput<<nRow;
+            ShearDesignOutput<<" Ø";
+            ShearDesignOutput<<transverseDiaMM;
+            ShearDesignOutput<<"/200 mm";
+            ShearDesignOutput<<"\n";
+            ShearDesignOutput<<"(p_v = ";
+            ShearDesignOutput<<rho200Hor;
+            ShearDesignOutput<<" > 0.0025  -> OK ✔";
+        }
+        else if (rho100Hor > 0.0025)
+        {
+            ShearDesignOutput<<"Use ";
+            ShearDesignOutput<<nRow;
+            ShearDesignOutput<<" Ø";
+            ShearDesignOutput<<transverseDiaMM;
+            ShearDesignOutput<<"/100 mm";
+            ShearDesignOutput<<"\n";
+            ShearDesignOutput<<"(p_v = ";
+            ShearDesignOutput<<rho100Hor;
+            ShearDesignOutput<<" > 0.0025  -> OK ✔";
+        }
+        else if (rho50Hor > 0.0025)
+        {
+            ShearDesignOutput<<"Use ";
+            ShearDesignOutput<<nRow;
+            ShearDesignOutput<<" Ø";
+            ShearDesignOutput<<transverseDiaMM;
+            ShearDesignOutput<<"/50 mm";
+            ShearDesignOutput<<"\n";
+            ShearDesignOutput<<"(p_v = ";
+            ShearDesignOutput<<rho50Hor;
+            ShearDesignOutput<<" > 0.0025  -> OK ✔";
+        }
+        else
+        {
+            ShearDesignOutput<<"Could not find a configuration for horizontal shear reinforcement.";
+            ShearDesignOutput<<"\n";
+            ShearDesignOutput<<"Please increase transverse reinforcement bar diameter";  
+        }
+    }    
+
+    cout<<"Design is completed"<<endl;
+    cout<<"See Outputs file for Design Outputs"<<endl;
+    cout<<"\n";
+    TensileDesignOutput.close();
+    ShearDesignOutput.close();
+    auto timenow2 =
+            chrono::system_clock::to_time_t(chrono::system_clock::now());
+    cout<< "Elapsed Time = " << timenow2 - timenow << " seconds"<< endl;
     return 0;
 }
