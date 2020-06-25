@@ -498,6 +498,7 @@ int main()
 	MainStressesFile.close();
 
 	// Element modification part
+
     vector<Element> ModifiedElmVec = ElementModificator(elmVec, dispVector, e, v, meshSize, thickness, fGlobal, nDof, nDofRestrained, nodeVec, controlDof, controlDisplacement, nbcVector);
     StiffnessMatrixAssembler modifiedSMA(ModifiedElmVec, nDof);
     vector<vector<double>> modifiedKGlobal = modifiedSMA.GetGlobalStiffnessMatrix(ModifiedElmVec, nDof);
@@ -509,6 +510,36 @@ int main()
     vector<vector<double>> modifiedPrincipleStressVector = modifiedPSC.PrincipleStressList;
     vector<vector<double>> modifiedCompressiveTensileStresses = MainStressCalculator(ModifiedElmVec, modifiedPrincipleStressVector);
 
+    double monitoredDisp = modifiedDispVector.at(controlDof - 1);
+    double convRatio = monitoredDisp / controlDisplacement;
+    int counter = 0;
+    
+    vector<Element> controlElmVector = ModifiedElmVec;
+	for (int i = 0; i < 100; ++i)
+	{
+    	ModifiedElmVec =  ElementModificator(controlElmVector, dispVector, e, v, meshSize, thickness, fGlobal, nDof, nDofRestrained, nodeVec, controlDof, controlDisplacement, nbcVector);
+    	StiffnessMatrixAssembler loopdSMA(ModifiedElmVec, nDof);
+    	modifiedKGlobal = loopdSMA.GetGlobalStiffnessMatrix(ModifiedElmVec, nDof);
+    	ForceVectorAssembler loopFVA(nodeVec, nbcVector, meshSize, nDof);
+    	modifiedFGlobal = loopFVA.ForceVector;
+    	DisplacementCalculator loopDispCalc(modifiedKGlobal, modifiedFGlobal, nDof, nDofRestrained);
+    	modifiedDispVector = loopDispCalc.DisplacementVector;
+    	PrincipleStressCalculator loopPSC(ModifiedElmVec, modifiedDispVector, e, v, meshSize);
+    	modifiedPrincipleStressVector = loopPSC.PrincipleStressList;
+    	modifiedCompressiveTensileStresses = MainStressCalculator(ModifiedElmVec, modifiedPrincipleStressVector);
+    	monitoredDisp = modifiedDispVector.at(controlDof - 1);
+		convRatio = monitoredDisp / controlDisplacement;
+    	controlElmVector = ModifiedElmVec;
+
+    	if (IsEqual(convRatio, 1, 0.1))
+    	{
+    		break;
+    	}
+    }
+
+
+
+
     ofstream ModifiedMainStressFile;
     ModifiedMainStressFile.open("Outputs/AnalysisOutputs/ModifiedMainStressFile");
     cout<<"Monitorred displacement = "<<modifiedDispVector.at(controlDof - 1)<<endl;
@@ -517,17 +548,10 @@ int main()
     {
     	vector<double> stressCouple = modifiedCompressiveTensileStresses.at(i);
     	double sigmaMin = stressCouple.at(0);
-    	double sigmaMax = stressCouple.at(1);
-    	//ModifiedMainStressFile << "Element Index ";
-    	//ModifiedMainStressFile << i + 1;
-    	//ModifiedMainStressFile << "\n";
-    	//ModifiedMainStressFile << "Compressive Stress = ";
+    	double sigmaMax = stressCouple.at(1);    	
     	ModifiedMainStressFile << sigmaMin * 0.000001;
-    	//ModifiedMainStressFile << "MPa \n";
-    	//ModifiedMainStressFile << "Tensile  Stress = ";
     	ModifiedMainStressFile << " ";
     	ModifiedMainStressFile << sigmaMax * 0.000001;
-    	//ModifiedMainStressFile << "MPa \n";
     	ModifiedMainStressFile << "\n";
     }
 

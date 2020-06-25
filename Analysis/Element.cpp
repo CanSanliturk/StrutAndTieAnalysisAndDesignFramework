@@ -13,7 +13,7 @@ Element::Element(int elmIndex, Node firstNode, Node secondNode, Node thirdNode, 
     {
         for (int j = 0; j < 8; ++j)
         {
-            this->ElementMatrix[i][j] = elementMatrix[i][j] * stiffnessModifier;
+            this->ElementMatrix[i][j] = elementMatrix[i][j];
         }
     }
 }
