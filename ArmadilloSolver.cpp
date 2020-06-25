@@ -241,8 +241,6 @@ vector<Element> ElementModificator(vector<Element> elmVec, vector<double> dispVe
     		modificationFactor = beta;
     	}
 
-    	cout << "Element index = "<<i + 1<<", Modification Factor = "<<modificationFactor<<endl;
-
     	double kElm[8][8] = { { 0 } };
 
     	for (int j = 0; j < 8; ++j)
@@ -290,7 +288,6 @@ vector<Element> ElementModificator(vector<Element> elmVec, vector<double> dispVe
 
     	Element modifiedElement(elm.ElementIndex, elm.FirstNode, elm.SecondNode, elm.ThirdNode, elm.FourthNode, kElm, elm.StiffnessModifier * displacementModificationFactor);
     	newModifiedElementVec.push_back(modifiedElement);
-    	cout << "Element index = "<<i + 1<<", New Modification Factor = "<< elm.StiffnessModifier * displacementModificationFactor <<endl;
     }
 	
     return newModifiedElementVec;
@@ -315,11 +312,11 @@ int main()
 
     // Material properties
     double e = 36000000000; // Elasticity modululus in Pa
-    double v = 0.3; // Poisson's ratio
+    double v = 0.0; // Poisson's ratio
     double rho = 0.0; // Density of material in kg/m3 (if mass is not gonna be encountered, simply send it as "0")
 
     // Info of mesh
-    double meshSize = 0.50; // in meters
+    double meshSize = 0.5; // in meters
     string meshType = "Quad";  // It is either "Quad" or "Triangular". Triangular mesh is not prepared yet (2020.05.21)
 
     // Info of gap(s)
@@ -485,21 +482,54 @@ int main()
 	for (int i = 0; i < MainStresses.size(); ++i)
 	{
 		vector<double> stressCouple = MainStresses.at(i);
-		MainStressesFile<<"Element Index ";
-		MainStressesFile<<(i + 1);
-		MainStressesFile<<"\n";
-		MainStressesFile<<"Compressive Stress = ";
+		//MainStressesFile<<"Element Index ";
+		//MainStressesFile<<(i + 1);
+		//MainStressesFile<<"\n";
+		//MainStressesFile<<"Compressive Stress = ";
 		MainStressesFile<<stressCouple.at(0) * 0.000001;
-		MainStressesFile<<" MPa";
-		MainStressesFile<<"\n";
-		MainStressesFile<<"Tensile Stress = ";
+		//MainStressesFile<<" MPa";
+		MainStressesFile<<" ";		
+		//MainStressesFile<<"\n";
+		//MainStressesFile<<"Tensile Stress = ";
 		MainStressesFile<<stressCouple.at(1) * 0.000001;
-		MainStressesFile<<" MPa";
+		//MainStressesFile<<" MPa";
 		MainStressesFile<<"\n";
 	}
 	MainStressesFile.close();
 
-    cout<<"Design begins"<<endl;
+	// Element modification part
+    vector<Element> ModifiedElmVec = ElementModificator(elmVec, dispVector, e, v, meshSize, thickness, fGlobal, nDof, nDofRestrained, nodeVec, controlDof, controlDisplacement, nbcVector);
+    StiffnessMatrixAssembler modifiedSMA(ModifiedElmVec, nDof);
+    vector<vector<double>> modifiedKGlobal = modifiedSMA.GetGlobalStiffnessMatrix(ModifiedElmVec, nDof);
+    ForceVectorAssembler modifiedFVA(nodeVec, nbcVector, meshSize, nDof);
+    vector<double> modifiedFGlobal = modifiedFVA.ForceVector;
+    DisplacementCalculator modifiedDispCal(modifiedKGlobal, modifiedFGlobal, nDof, nDofRestrained);
+    std::vector<double> modifiedDispVector = modifiedDispCal.DisplacementVector;
+    PrincipleStressCalculator modifiedPSC(ModifiedElmVec, modifiedDispVector, e, v, meshSize);
+    vector<vector<double>> modifiedPrincipleStressVector = modifiedPSC.PrincipleStressList;
+    vector<vector<double>> modifiedCompressiveTensileStresses = MainStressCalculator(ModifiedElmVec, modifiedPrincipleStressVector);
+
+    ofstream ModifiedMainStressFile;
+    ModifiedMainStressFile.open("Outputs/AnalysisOutputs/ModifiedMainStressFile");
+    cout<<"Monitorred displacement = "<<modifiedDispVector.at(controlDof - 1)<<endl;
+    cout<<"Control displacement = "<<controlDisplacement<<endl;
+    for (int i = 0; i < modifiedCompressiveTensileStresses.size(); ++i)
+    {
+    	vector<double> stressCouple = modifiedCompressiveTensileStresses.at(i);
+    	double sigmaMin = stressCouple.at(0);
+    	double sigmaMax = stressCouple.at(1);
+    	//ModifiedMainStressFile << "Element Index ";
+    	//ModifiedMainStressFile << i + 1;
+    	//ModifiedMainStressFile << "\n";
+    	//ModifiedMainStressFile << "Compressive Stress = ";
+    	ModifiedMainStressFile << sigmaMin * 0.000001;
+    	//ModifiedMainStressFile << "MPa \n";
+    	//ModifiedMainStressFile << "Tensile  Stress = ";
+    	ModifiedMainStressFile << " ";
+    	ModifiedMainStressFile << sigmaMax * 0.000001;
+    	//ModifiedMainStressFile << "MPa \n";
+    	ModifiedMainStressFile << "\n";
+    }
 
     //auto timenow2 =
     //        chrono::system_clock::to_time_t(chrono::system_clock::now());
