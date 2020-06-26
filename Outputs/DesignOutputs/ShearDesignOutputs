@@ -1,8 +1,8 @@
 Stress check...
 ØFn = Ø * 0.85 * fc where Ø = 075
-Maximum Compressive Stress for an element = 1.6831 MPa
-ØFn = 12.75 MPa
-Fu = 1.6831 MPa
+Maximum Compressive Stress for an element = 5.73767 MPa
+ØFn = 17.85 MPa
+Fu = 5.73767 MPa
 ØFn => Fu
 Compressive stress is within limits. Design can be conducted.
 

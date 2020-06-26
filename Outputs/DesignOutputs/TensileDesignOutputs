@@ -1,99 +1,171 @@
 Note that Yield Stress is multiplied by 0.75 in design
 -------------------------------------------------------
 
+Tensile Design For Element#1
+Required Area = 779.503 mm^2
+Use 6Ø14
+Provided Area = 923.628 mm^2
+A_provided > A_required -> OK ✔
+
 Tensile Design For Element#2
-Required Area = 121.42 mm^2
-Use 1Ø14
-Provided Area = 153.938 mm^2
+Required Area = 2296.74 mm^2
+Use 15Ø14
+Provided Area = 2309.07 mm^2
 A_provided > A_required -> OK ✔
 
 Tensile Design For Element#3
-Required Area = 231.582 mm^2
-Use 2Ø14
-Provided Area = 307.876 mm^2
+Required Area = 2199.82 mm^2
+Use 15Ø14
+Provided Area = 2309.07 mm^2
 A_provided > A_required -> OK ✔
 
 Tensile Design For Element#4
-Required Area = 371.591 mm^2
-Use 3Ø14
-Provided Area = 461.814 mm^2
+Required Area = 2146.72 mm^2
+Use 14Ø14
+Provided Area = 2155.13 mm^2
 A_provided > A_required -> OK ✔
 
 Tensile Design For Element#5
-Required Area = 266.625 mm^2
-Use 2Ø14
-Provided Area = 307.876 mm^2
+Required Area = 2079.1 mm^2
+Use 14Ø14
+Provided Area = 2155.13 mm^2
 A_provided > A_required -> OK ✔
 
 Tensile Design For Element#6
-Required Area = 191.899 mm^2
-Use 2Ø14
-Provided Area = 307.876 mm^2
+Required Area = 1985.73 mm^2
+Use 13Ø14
+Provided Area = 2001.19 mm^2
 A_provided > A_required -> OK ✔
 
 Tensile Design For Element#7
-Required Area = 191.899 mm^2
-Use 2Ø14
-Provided Area = 307.876 mm^2
+Required Area = 1913.27 mm^2
+Use 13Ø14
+Provided Area = 2001.19 mm^2
 A_provided > A_required -> OK ✔
 
 Tensile Design For Element#8
-Required Area = 266.625 mm^2
-Use 2Ø14
-Provided Area = 307.876 mm^2
+Required Area = 1889.63 mm^2
+Use 13Ø14
+Provided Area = 2001.19 mm^2
 A_provided > A_required -> OK ✔
 
 Tensile Design For Element#9
-Required Area = 371.591 mm^2
-Use 3Ø14
-Provided Area = 461.814 mm^2
+Required Area = 1901.29 mm^2
+Use 13Ø14
+Provided Area = 2001.19 mm^2
 A_provided > A_required -> OK ✔
 
 Tensile Design For Element#10
-Required Area = 231.582 mm^2
-Use 2Ø14
-Provided Area = 307.876 mm^2
+Required Area = 1909.09 mm^2
+Use 13Ø14
+Provided Area = 2001.19 mm^2
 A_provided > A_required -> OK ✔
 
 Tensile Design For Element#11
-Required Area = 121.42 mm^2
-Use 1Ø14
-Provided Area = 153.938 mm^2
+Required Area = 1862.94 mm^2
+Use 13Ø14
+Provided Area = 2001.19 mm^2
+A_provided > A_required -> OK ✔
+
+Tensile Design For Element#12
+Required Area = 1696.74 mm^2
+Use 12Ø14
+Provided Area = 1847.26 mm^2
+A_provided > A_required -> OK ✔
+
+Tensile Design For Element#13
+Required Area = 1324.23 mm^2
+Use 9Ø14
+Provided Area = 1385.44 mm^2
 A_provided > A_required -> OK ✔
 
 Tensile Design For Element#14
-Required Area = 282.391 mm^2
-Use 2Ø14
-Provided Area = 307.876 mm^2
+Required Area = 750.738 mm^2
+Use 5Ø14
+Provided Area = 769.69 mm^2
 A_provided > A_required -> OK ✔
 
-Tensile Design For Element#15
-Required Area = 274.102 mm^2
-Use 2Ø14
-Provided Area = 307.876 mm^2
+Tensile Design For Element#18
+Required Area = 688.959 mm^2
+Use 5Ø14
+Provided Area = 769.69 mm^2
 A_provided > A_required -> OK ✔
 
-Tensile Design For Element#22
-Required Area = 274.102 mm^2
-Use 2Ø14
-Provided Area = 307.876 mm^2
+Tensile Design For Element#28
+Required Area = 1062.89 mm^2
+Use 7Ø14
+Provided Area = 1077.57 mm^2
 A_provided > A_required -> OK ✔
 
-Tensile Design For Element#23
-Required Area = 282.391 mm^2
-Use 2Ø14
-Provided Area = 307.876 mm^2
+Tensile Design For Element#29
+Required Area = 1608.88 mm^2
+Use 11Ø14
+Provided Area = 1693.32 mm^2
 A_provided > A_required -> OK ✔
 
-Tensile Design For Element#26
-Required Area = 119.933 mm^2
-Use 1Ø14
-Provided Area = 153.938 mm^2
+Tensile Design For Element#30
+Required Area = 1603.56 mm^2
+Use 11Ø14
+Provided Area = 1693.32 mm^2
 A_provided > A_required -> OK ✔
 
-Tensile Design For Element#35
-Required Area = 119.933 mm^2
-Use 1Ø14
-Provided Area = 153.938 mm^2
+Tensile Design For Element#31
+Required Area = 883.545 mm^2
+Use 6Ø14
+Provided Area = 923.628 mm^2
+A_provided > A_required -> OK ✔
+
+Tensile Design For Element#45
+Required Area = 1090.22 mm^2
+Use 8Ø14
+Provided Area = 1231.5 mm^2
+A_provided > A_required -> OK ✔
+
+Tensile Design For Element#46
+Required Area = 1834.55 mm^2
+Use 12Ø14
+Provided Area = 1847.26 mm^2
+A_provided > A_required -> OK ✔
+
+Tensile Design For Element#47
+Required Area = 1554.16 mm^2
+Use 11Ø14
+Provided Area = 1693.32 mm^2
+A_provided > A_required -> OK ✔
+
+Tensile Design For Element#62
+Required Area = 1025.9 mm^2
+Use 7Ø14
+Provided Area = 1077.57 mm^2
+A_provided > A_required -> OK ✔
+
+Tensile Design For Element#63
+Required Area = 1774.03 mm^2
+Use 12Ø14
+Provided Area = 1847.26 mm^2
+A_provided > A_required -> OK ✔
+
+Tensile Design For Element#64
+Required Area = 1032.3 mm^2
+Use 7Ø14
+Provided Area = 1077.57 mm^2
+A_provided > A_required -> OK ✔
+
+Tensile Design For Element#79
+Required Area = 791.036 mm^2
+Use 6Ø14
+Provided Area = 923.628 mm^2
+A_provided > A_required -> OK ✔
+
+Tensile Design For Element#80
+Required Area = 1345.14 mm^2
+Use 9Ø14
+Provided Area = 1385.44 mm^2
+A_provided > A_required -> OK ✔
+
+Tensile Design For Element#96
+Required Area = 1210.73 mm^2
+Use 8Ø14
+Provided Area = 1231.5 mm^2
 A_provided > A_required -> OK ✔
 

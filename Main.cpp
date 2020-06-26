@@ -300,12 +300,14 @@ int main()
     /// INPUT CARD ///
     // Length : m, Force : N
     // Surface outer dimensions
-    double lX = 6; // in meters
-    double lY = 3; // in meters
+    double lX = 4; // in meters
+    double lY = 1.5; // in meters
     double thickness = 0.5; // in meters
+    double longitudinalBarDiameter = 0.014; // Tension bars diameter in meters
+    double transverseBarDiameter = 0.012; // Transverse bars diameters in meters
 
 	// Control node to monitor displacement    
-    double controlPointX = 3;
+    double controlPointX = 1.5;
     double controlPointY = 0;
     bool isControlDisplacementInXDirection = false; // Name explains itself
 
@@ -316,14 +318,11 @@ int main()
     double e = 36000000000; // Elasticity modululus in Pa
     double v = 0.0; // Poisson's ratio
     double rho = 0.3; // Density of material in kg/m3 (if mass is not gonna be encountered, simply send it as "0")
-    double fC = 20000000; // Compressive strength of concrete in Pa. Pay attention that it is the design strength
+    double fC = 28000000; // Compressive strength of concrete in Pa. Pay attention that it is the design strength
     double fY = 420000000; // Yield strength of steel in Pa. Pay attention that it is the design strength
-    double longitudinalBarDiameter = 0.014; // Tension bars diameter in meters
-    double transverseBarDiameter = 0.012; // Transverse bars diameters in meters
-
+    
     // Info of mesh
-    double meshSize = 0.5; // in meters
-    string meshType = "Quad";  // It is either "Quad" or "Triangular". Triangular mesh is not prepared yet (2020.05.21)
+    double meshSize = 0.25; // in meters
 
     // Info of gap(s)
     //Gap firstGap(2.2, 3.8, 0, 1.5);
@@ -334,10 +333,10 @@ int main()
     //EssentialBC nullEBC(-1, -1, -1, -1, -1, -1);
     EssentialBC ebcFirst(0, 0, 0, 0, 1, 1);
     EssentialBC ebcSecond(6, 6, 0, 0, 1, 1);
-    vector<EssentialBC> ebcVector{ ebcFirst, ebcSecond };
+    vector<EssentialBC> ebcVector{ ebcFirst , ebcSecond};
 
     //// Natural bc's on secondary variable (Forces in case of elasticity problem)
-    NaturalBC firstNBC(3, 3, 3, 3, 0, -1400000);
+    NaturalBC firstNBC(1.5, 1.5, 1.5, 1.5, 0, -2800000);
     vector<NaturalBC> nbcVector{ firstNBC };
     double tol = 0.001; // Set tolerance value to check equality
 
